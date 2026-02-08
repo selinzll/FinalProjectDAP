@@ -1,9 +1,3 @@
-"""
-Digital Maturity Assessment - Interactive Web Dashboard
-Streamlit application with digitalmaturity.org inspired design
-FIXED VERSION: Replaced problematic charts with Robust Alternatives
-"""
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -12,14 +6,12 @@ import plotly.express as px
 from sklearn.linear_model import LinearRegression
 import io
 
-# ===== PAGE CONFIGURATION =====
 st.set_page_config(
     page_title="Digital Maturity Assessment",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ===== CUSTOM CSS (Professional Dark Mode) =====
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -60,7 +52,6 @@ st.markdown("""
         margin-top: 2rem;
     }
 
-    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
         background-color: #161616;
         border-right: 1px solid #333;
@@ -73,7 +64,6 @@ st.markdown("""
         color: #E0E0E0 !important;
     }
 
-    /* Input Widgets */
     .stRadio label, .stCheckbox label, .stSlider label, .stSelectbox label {
         color: #E0E0E0 !important;
     }
@@ -84,7 +74,6 @@ st.markdown("""
         color: #E0E0E0 !important;
     }
 
-    /* Metric Cards */
     div[data-testid="stMetric"] {
         background-color: var(--card-bg);
         padding: 20px;
@@ -99,7 +88,6 @@ st.markdown("""
         color: #FFFFFF !important;
     }
 
-    /* Buttons */
     .stButton > button {
         background-color: #333;
         color: white !important;
@@ -112,42 +100,36 @@ st.markdown("""
         background-color: var(--accent-color);
         border-color: var(--accent-color);
     }
-    
-    /* Chart Container Background */
+
     .js-plotly-plot {
         background-color: #1E1E1E;
         border-radius: 5px;
         padding: 10px;
     }
-    
+
     div[data-testid="stDataFrame"] {
         background-color: var(--card-bg);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ===== DATA LOADING =====
+
 @st.cache(allow_output_mutation=True)
 def load_data():
-    """Load and process data"""
     try:
         df_before = pd.read_excel('rawdma_before.xlsx')
         df_after = pd.read_excel('rawdma_after.xlsx')
 
-        # FORCE ID TO STRING
         df_before['Company_ID'] = df_before['Company_ID'].astype(str).str.strip()
         df_after['Company_ID'] = df_after['Company_ID'].astype(str).str.strip()
 
-        # Merge
         df = df_before.merge(df_after, on='Company_ID', suffixes=('_Before', '_After'))
 
-        # CLEAN STRINGS & WHITESPACE
         df_obj = df.select_dtypes(['object'])
         df[df_obj.columns] = df_obj.apply(lambda x: x.str.strip())
 
         dimensions = ['Strategy', 'Readiness', 'HumanCentric', 'DataMgmt', 'AutomationAI', 'GreenDigital']
 
-        # FORCE NUMERICS
         for dim in dimensions:
             col_before = f'DimScore_{dim}_Before'
             col_after = f'DimScore_{dim}_After'
@@ -165,9 +147,9 @@ def load_data():
         st.error(f"Error loading data: {e}")
         return pd.DataFrame(), []
 
+
 @st.cache(allow_output_mutation=True)
 def train_model(df, dimensions):
-    """Train ML model"""
     if df.empty: return None
     X = df[[f'DimScore_{dim}_Before' for dim in dimensions]].values
     y = df['Overall_Maturity_After'].values
@@ -175,18 +157,17 @@ def train_model(df, dimensions):
     model.fit(X, y)
     return model
 
+
 def to_excel_download(df):
-    """Convert DataFrame to Excel for download"""
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Data')
     return output.getvalue()
 
-# ===== LOAD DATA AND MODEL =====
+
 df, dimensions = load_data()
 ml_model = train_model(df, dimensions)
 
-# ===== SIDEBAR =====
 st.sidebar.markdown("## Digital Maturity Assessment")
 st.sidebar.markdown("### Navigation")
 
@@ -197,7 +178,6 @@ page = st.sidebar.radio(
 
 st.sidebar.markdown("---")
 
-# Initialize variables
 sector_filter = "All Sectors"
 size_filter = "All Sizes"
 company_name = None
@@ -221,17 +201,13 @@ elif page == "Company Report":
         sorted(df['Company_Name_Before'].unique().tolist())
     )
 
-# ===== MAIN CONTENT =====
-
 if page == "Market Overview":
-    # Apply filters
     df_filtered = df.copy()
     if sector_filter != "All Sectors":
         df_filtered = df_filtered[df_filtered['Sector_Before'] == sector_filter]
     if size_filter != "All Sizes":
         df_filtered = df_filtered[df_filtered['Size_Before'] == size_filter]
 
-    # Header
     st.markdown(f"# Digital Maturity Landscape")
     if sector_filter != "All Sectors" or size_filter != "All Sizes":
         filters_text = []
@@ -248,11 +224,11 @@ if page == "Market Overview":
 
     st.markdown("---")
 
-    # KPIs - FLAT LAYOUT
     k1, k2, k3, k4 = st.columns(4)
 
     with k1:
-        st.metric("Average Maturity", f"{df_filtered['Overall_Maturity_After'].mean():.1f}", f"+{df_filtered['Overall_Delta'].mean():.1f}")
+        st.metric("Average Maturity", f"{df_filtered['Overall_Maturity_After'].mean():.1f}",
+                  f"+{df_filtered['Overall_Delta'].mean():.1f}")
 
     with k2:
         st.metric("Average Growth", f"{df_filtered['Overall_Delta'].mean():.1f}")
@@ -267,26 +243,19 @@ if page == "Market Overview":
 
     st.markdown("---")
 
-    # ==============================================================================
-    # 2. CORRELATION ANALYSIS (Replaced Heatmap with Bar Chart)
-    # ==============================================================================
     st.markdown("## Correlation Analysis")
 
     col_chart, col_text = st.columns([2, 1])
 
     with col_chart:
-        # Calculate Correlation Series (1D is safer than 2D matrix)
         corr_cols = [f'DimScore_{dim}_Before' for dim in dimensions]
-        # Calculate correlation of each dimension with the FINAL Outcome
         correlations = df_filtered[corr_cols].corrwith(df_filtered['Overall_Maturity_After'])
 
-        # Clean up names for display
         corr_df = pd.DataFrame({
             'Dimension': dimensions,
             'Correlation': correlations.values
-        }).sort_values('Correlation', ascending=True) # Sort for chart
+        }).sort_values('Correlation', ascending=True)
 
-        # Create Horizontal Bar Chart
         fig = px.bar(
             corr_df,
             x='Correlation',
@@ -309,19 +278,18 @@ if page == "Market Overview":
     with col_text:
         st.markdown("""
         ### Drivers of Success
-        
+
         This chart shows which baseline dimensions are the strongest predictors of high final maturity.
-        
+
         **Interpretation:**
         - **Longer Bars:** Stronger relationship.
         - **High Correlation:** Investing in this area early yields better long-term results.
         """)
 
-        # Top correlation text
         top_dim = corr_df.iloc[-1]
         st.success(f"""
         **Top Predictor:**
-        
+
         **{top_dim['Dimension']}**
         (Correlation: {top_dim['Correlation']:.2f})
         """)
@@ -352,23 +320,17 @@ if page == "Market Overview":
         st.dataframe(bottom10.style.format("{:.1f}", subset=['Before', 'After', 'Growth']))
 
 elif page == "Company Report":
-    # Get company data
     company_row = df[df['Company_Name_Before'] == company_name].iloc[0]
     sector = company_row['Sector_Before']
-
-    # Sector average
     sector_df = df[df['Sector_Before'] == sector]
 
-    # Use centered layout (Spacer, Content, Spacer)
-    # Using columns for structure - Fixed nesting issue by keeping it flat
-
-    # Header
     st.markdown(f"<h1 style='text-align: center;'>{company_name}</h1>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align: center;'>{sector} | {company_row['Size_Before']} | {company_row['Country_Before']}</p>", unsafe_allow_html=True)
+    st.markdown(
+        f"<p style='text-align: center;'>{sector} | {company_row['Size_Before']} | {company_row['Country_Before']}</p>",
+        unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # KPIs - Flat layout
     k1, k2, k3 = st.columns(3)
 
     with k1:
@@ -396,7 +358,6 @@ elif page == "Company Report":
     st.markdown("---")
     st.markdown("## Performance by Dimension")
 
-    # Comparison table
     dim_data = []
     for dim in dimensions:
         dim_data.append({
@@ -413,7 +374,6 @@ elif page == "Company Report":
     with col1:
         st.dataframe(dim_df)
 
-        # Insights
         best_dim = dim_df.loc[dim_df['Growth'].idxmax(), 'Dimension']
         worst_dim = dim_df.loc[dim_df['Growth'].idxmin(), 'Dimension']
 
@@ -421,7 +381,6 @@ elif page == "Company Report":
         st.warning(f"**Needs Attention:** {worst_dim}")
 
     with col2:
-        # Bar chart
         fig = go.Figure()
 
         fig.add_trace(go.Bar(
@@ -454,7 +413,6 @@ elif page == "Company Report":
     st.markdown("---")
     st.markdown("## Sector Benchmarking")
 
-    # Radar chart
     categories = dimensions
 
     company_values = [company_row[f'DimScore_{dim}_After'] for dim in dimensions]
@@ -499,7 +457,6 @@ elif page == "Company Report":
 
     st.plotly_chart(fig, use_container_width=True)
 
-    # Interpretation
     above_avg = sum([1 for i in range(len(company_values)) if company_values[i] > sector_values[i]])
 
     if above_avg >= 4:
@@ -507,7 +464,7 @@ elif page == "Company Report":
     elif above_avg >= 3:
         st.info(f"**Competitive** with sector average ({above_avg} dimensions above average)")
     else:
-        st.warning(f"**Below** sector average in {6-above_avg} dimensions - opportunity for improvement")
+        st.warning(f"**Below** sector average in {6 - above_avg} dimensions - opportunity for improvement")
 
     st.markdown("---")
     st.markdown("## Growth Forecast")
@@ -517,7 +474,6 @@ elif page == "Company Report":
     and see the predicted impact on overall maturity.
     """)
 
-    # Create sliders for each dimension
     adjustments = {}
 
     col1, col2, col3 = st.columns(3)
@@ -534,14 +490,12 @@ elif page == "Company Report":
                 step=1.0
             )
 
-    # Predict new overall maturity
     new_scores = [company_row[f'DimScore_{dim}_Before'] + adjustments[dim] for dim in dimensions]
     predicted_maturity = ml_model.predict([new_scores])[0]
 
     current_maturity = company_row['Overall_Maturity_After']
     potential_gain = predicted_maturity - current_maturity
 
-    # Display prediction
     st.markdown("---")
 
     col1, col2, col3 = st.columns(3)
@@ -599,11 +553,9 @@ elif page == "Predictive Tool":
             )
 
     if st.button("Predict Maturity"):
-        # Make prediction
         X_input = [[input_scores[dim] for dim in dimensions]]
         predicted_score = ml_model.predict(X_input)[0]
 
-        # Determine level
         if predicted_score < 45:
             level = "Novice"
             color = "#D32F2F"
@@ -630,7 +582,6 @@ elif page == "Predictive Tool":
             percentile = (df['Overall_Maturity_After'] < predicted_score).sum() / len(df) * 100
             st.metric("Estimated Percentile", f"{percentile:.0f}th")
 
-        # Visualization
         fig = go.Figure(go.Indicator(
             mode="gauge+number+delta",
             value=predicted_score,
@@ -662,7 +613,7 @@ elif page == "Predictive Tool":
 
         st.plotly_chart(fig, use_container_width=True)
 
-else:  # Data Export
+else:
     st.markdown("# Data Export")
 
     st.markdown("""
@@ -717,6 +668,5 @@ else:  # Data Export
 
     st.info(f"**{len(df)} companies** | **{len(df.columns)} columns**")
 
-    # Preview
     with st.expander("Preview Dataset"):
         st.dataframe(df.head(20))

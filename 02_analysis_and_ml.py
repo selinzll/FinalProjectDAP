@@ -1,8 +1,3 @@
-"""
-Digital Maturity Assessment - Analysis & Machine Learning
-Performs statistical analysis, feature engineering, and predictive modeling
-"""
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,25 +9,20 @@ from scipy import stats
 import warnings
 warnings.filterwarnings('ignore')
 
-# Set visualization style
 sns.set_style('whitegrid')
 plt.rcParams['figure.figsize'] = (12, 6)
 
-
 def load_and_merge_data():
-    """Load both Excel files and merge on Company_ID"""
     print("=" * 70)
     print("STEP 1: DATA LOADING & PREPROCESSING")
     print("=" * 70)
     
-    # Load datasets
     df_before = pd.read_excel('/Users/zseli/PycharmProjects/FinalProjectDAP/rawdma_before.xlsx')
     df_after = pd.read_excel('/Users/zseli/PycharmProjects/FinalProjectDAP/rawdma_after.xlsx')
     
     print(f"\n✓ Loaded BEFORE dataset: {df_before.shape[0]} rows, {df_before.shape[1]} columns")
     print(f"✓ Loaded AFTER dataset: {df_after.shape[0]} rows, {df_after.shape[1]} columns")
     
-    # Merge on Company_ID
     df_merged = df_before.merge(
         df_after,
         on='Company_ID',
@@ -41,7 +31,6 @@ def load_and_merge_data():
     
     print(f"✓ Merged dataset: {df_merged.shape[0]} companies matched")
     
-    # Extract dimension scores
     dimensions = ['Strategy', 'Readiness', 'HumanCentric', 'DataMgmt', 'AutomationAI', 'GreenDigital']
     
     for dim in dimensions:
@@ -57,14 +46,11 @@ def load_and_merge_data():
     
     return df_merged, dimensions
 
-
 def exploratory_analysis(df, dimensions):
-    """Perform statistical analysis"""
     print("\n" + "=" * 70)
     print("STEP 2: EXPLORATORY DATA ANALYSIS")
     print("=" * 70)
     
-    # Summary statistics
     print("\n1. OVERALL MATURITY SCORES")
     print("-" * 70)
     print(f"{'Metric':<20} {'Before':<15} {'After':<15} {'Delta':<15}")
@@ -85,7 +71,6 @@ def exploratory_analysis(df, dimensions):
           f"{df['Overall_Maturity_After'].max():<15.2f} "
           f"{df['Overall_Delta'].max():<15.2f}")
     
-    # Paired t-test
     t_stat, p_value = stats.ttest_rel(
         df['Overall_Maturity_After'],
         df['Overall_Maturity_Before']
@@ -99,7 +84,6 @@ def exploratory_analysis(df, dimensions):
     print(f"p-value: {p_value:.2e}")
     print(f"Result: {'REJECT H0 - Significant improvement' if p_value < 0.001 else 'FAIL TO REJECT H0'}")
     
-    # Effect size (Cohen's d)
     cohens_d = (df['Overall_Maturity_After'].mean() - df['Overall_Maturity_Before'].mean()) / df['Overall_Maturity_Before'].std()
     print(f"Cohen's d (effect size): {cohens_d:.4f}")
     if cohens_d > 0.8:
@@ -110,7 +94,6 @@ def exploratory_analysis(df, dimensions):
         effect_interpretation = "Small effect"
     print(f"Interpretation: {effect_interpretation}")
     
-    # Dimension-level improvements
     print(f"\n3. DIMENSION-LEVEL IMPROVEMENTS")
     print("-" * 70)
     print(f"{'Dimension':<20} {'Before':<12} {'After':<12} {'Delta':<12} {'% Change':<12}")
@@ -135,7 +118,6 @@ def exploratory_analysis(df, dimensions):
     print(f"\nTop improvement dimension: {dim_stats_df.iloc[0]['Dimension']} (+{dim_stats_df.iloc[0]['Delta']:.2f} points)")
     print(f"Lowest improvement dimension: {dim_stats_df.iloc[-1]['Dimension']} (+{dim_stats_df.iloc[-1]['Delta']:.2f} points)")
     
-    # Sector analysis
     print(f"\n4. SECTOR-SPECIFIC PERFORMANCE")
     print("-" * 70)
     sector_stats = df.groupby('Sector_Before').agg({
@@ -152,14 +134,11 @@ def exploratory_analysis(df, dimensions):
     
     return dim_stats_df, sector_stats
 
-
 def correlation_analysis(df, dimensions):
-    """Analyze correlations between dimensions"""
     print("\n" + "=" * 70)
     print("STEP 3: CORRELATION ANALYSIS")
     print("=" * 70)
     
-    # Prepare correlation matrix (Before dimensions vs After Overall)
     before_cols = [f'DimScore_{dim}_Before' for dim in dimensions]
     corr_df = df[before_cols + ['Overall_Maturity_After']].copy()
     corr_df.columns = dimensions + ['Overall_After']
@@ -175,17 +154,15 @@ def correlation_analysis(df, dimensions):
     
     print(f"\nStrongest predictor: {correlations.index[0]} (r = {correlations.iloc[0]:.4f})")
     
-    # Inter-dimension correlations
     print("\n\nInter-dimension correlations (BEFORE assessment):")
     print("-" * 70)
     
     inter_corr = corr_df[dimensions].corr()
     
-    # Find strongest correlations (excluding diagonal)
     strong_corr = []
     for i, dim1 in enumerate(dimensions):
         for j, dim2 in enumerate(dimensions):
-            if i < j:  # Upper triangle only
+            if i < j:
                 corr_val = inter_corr.loc[dim1, dim2]
                 strong_corr.append((dim1, dim2, corr_val))
     
@@ -195,7 +172,6 @@ def correlation_analysis(df, dimensions):
     for dim1, dim2, corr_val in strong_corr[:5]:
         print(f"  {dim1} <-> {dim2}: r = {corr_val:.4f}")
     
-    # Save correlation matrix for visualization
     plt.figure(figsize=(10, 8))
     sns.heatmap(corr_df.corr(), annot=True, fmt='.3f', cmap='RdYlGn', center=0,
                 square=True, linewidths=1, cbar_kws={"shrink": 0.8})
@@ -206,14 +182,11 @@ def correlation_analysis(df, dimensions):
     
     return correlations, inter_corr
 
-
 def train_ml_model(df, dimensions):
-    """Train Linear Regression model"""
     print("\n" + "=" * 70)
     print("STEP 4: MACHINE LEARNING - LINEAR REGRESSION")
     print("=" * 70)
     
-    # Prepare features and target
     X_cols = [f'DimScore_{dim}_Before' for dim in dimensions]
     X = df[X_cols].values
     y = df['Overall_Maturity_After'].values
@@ -222,7 +195,6 @@ def train_ml_model(df, dimensions):
     print(f"✓ Target (y): Overall maturity from AFTER assessment")
     print(f"✓ Sample size: {len(X)} companies")
     
-    # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
@@ -230,17 +202,14 @@ def train_ml_model(df, dimensions):
     print(f"\n✓ Train set: {len(X_train)} samples")
     print(f"✓ Test set: {len(X_test)} samples")
     
-    # Train model
     model = LinearRegression()
     model.fit(X_train, y_train)
     
     print("\n✓ Model trained successfully")
     
-    # Predictions
     y_train_pred = model.predict(X_train)
     y_test_pred = model.predict(X_test)
     
-    # Evaluate
     train_r2 = r2_score(y_train, y_train_pred)
     test_r2 = r2_score(y_test, y_test_pred)
     train_rmse = np.sqrt(mean_squared_error(y_train, y_train_pred))
@@ -256,11 +225,9 @@ def train_ml_model(df, dimensions):
     print(f"{'RMSE':<25} {train_rmse:<20.4f} {test_rmse:<20.4f}")
     print(f"{'MAE (Test only)':<25} {'':<20} {test_mae:<20.4f}")
     
-    # Cross-validation
     cv_scores = cross_val_score(model, X, y, cv=5, scoring='r2')
     print(f"\n5-Fold Cross-Validation R²: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})")
     
-    # Feature importance (coefficients)
     print("\n" + "-" * 70)
     print("FEATURE IMPORTANCE (Model Coefficients)")
     print("-" * 70)
@@ -288,10 +255,8 @@ def train_ml_model(df, dimensions):
     print(f"\n2. Model explains {test_r2*100:.1f}% of variance in post-intervention maturity")
     print(f"3. Average prediction error: ±{test_rmse:.2f} maturity points")
     
-    # Save model visualization
     plt.figure(figsize=(12, 5))
     
-    # Subplot 1: Actual vs Predicted
     plt.subplot(1, 2, 1)
     plt.scatter(y_test, y_test_pred, alpha=0.6, edgecolors='k', linewidth=0.5)
     plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
@@ -300,7 +265,6 @@ def train_ml_model(df, dimensions):
     plt.title(f'Model Predictions (R² = {test_r2:.3f})', fontsize=12, fontweight='bold')
     plt.grid(alpha=0.3)
     
-    # Subplot 2: Feature Importance
     plt.subplot(1, 2, 2)
     colors = ['green' if c > 0 else 'red' for c in coef_df['Coefficient']]
     plt.barh(coef_df['Dimension'], coef_df['Coefficient'], color=colors, alpha=0.7, edgecolor='black')
@@ -315,9 +279,7 @@ def train_ml_model(df, dimensions):
     
     return model, coef_df, test_r2, test_rmse
 
-
 def generate_insights_report(df, dimensions, dim_stats, sector_stats, correlations, coef_df):
-    """Generate comprehensive insights report"""
     print("\n" + "=" * 70)
     print("STEP 5: GENERATING INSIGHTS REPORT")
     print("=" * 70)
@@ -328,7 +290,6 @@ def generate_insights_report(df, dimensions, dim_stats, sector_stats, correlatio
     report.append("="*80)
     report.append("")
     
-    # Executive Summary
     report.append("EXECUTIVE SUMMARY")
     report.append("-"*80)
     avg_improvement = df['Overall_Delta'].mean()
@@ -342,7 +303,6 @@ def generate_insights_report(df, dimensions, dim_stats, sector_stats, correlatio
     report.append(f"Post-Intervention (After) Mean: {df['Overall_Maturity_After'].mean():.2f}")
     report.append("")
     
-    # Top Performers
     report.append("TOP 10 PERFORMERS (Highest Growth)")
     report.append("-"*80)
     top10 = df.nlargest(10, 'Overall_Delta')[
@@ -354,7 +314,6 @@ def generate_insights_report(df, dimensions, dim_stats, sector_stats, correlatio
                      f"Growth: +{row['Overall_Delta']:.2f} ({row['Overall_Maturity_Before']:.1f} → {row['Overall_Maturity_After']:.1f})")
     report.append("")
     
-    # Bottom Performers
     report.append("COMPANIES NEEDING ATTENTION (Lowest Growth / Decline)")
     report.append("-"*80)
     bottom10 = df.nsmallest(10, 'Overall_Delta')[
@@ -366,14 +325,12 @@ def generate_insights_report(df, dimensions, dim_stats, sector_stats, correlatio
                      f"Change: {row['Overall_Delta']:+.2f} ({row['Overall_Maturity_Before']:.1f} → {row['Overall_Maturity_After']:.1f})")
     report.append("")
     
-    # Dimension Analysis
     report.append("DIMENSION-LEVEL INSIGHTS")
     report.append("-"*80)
     report.append(f"Highest Growth Dimension: {dim_stats.iloc[0]['Dimension']} (+{dim_stats.iloc[0]['Delta']:.2f})")
     report.append(f"Priority Investment Area: {dim_stats.iloc[-1]['Dimension']} (+{dim_stats.iloc[-1]['Delta']:.2f})")
     report.append("")
     
-    # Sector Insights
     report.append("SECTOR-SPECIFIC FINDINGS")
     report.append("-"*80)
     best_sector = sector_stats.index[0]
@@ -382,14 +339,12 @@ def generate_insights_report(df, dimensions, dim_stats, sector_stats, correlatio
     report.append(f"Underperforming Sector: {worst_sector} (+{sector_stats.iloc[-1]['Overall_Delta']:.2f})")
     report.append("")
     
-    # Predictive Insights
     report.append("PREDICTIVE MODEL INSIGHTS")
     report.append("-"*80)
     report.append(f"Most Predictive Dimension: {correlations.index[0]} (r={correlations.iloc[0]:.3f})")
     report.append(f"Highest Impact Lever: {coef_df.iloc[0]['Dimension']} (β={coef_df.iloc[0]['Coefficient']:.3f})")
     report.append("")
     
-    # Recommendations
     report.append("STRATEGIC RECOMMENDATIONS")
     report.append("-"*80)
     report.append(f"1. Prioritize {coef_df.iloc[0]['Dimension']} investments for maximum ROI")
@@ -399,7 +354,6 @@ def generate_insights_report(df, dimensions, dim_stats, sector_stats, correlatio
     report.append("")
     report.append("="*80)
     
-    # Save report
     report_text = '\n'.join(report)
     with open('/Users/zseli/PycharmProjects/FinalProjectDAP/insights_report.txt', 'w') as f:
         f.write(report_text)
@@ -410,32 +364,19 @@ def generate_insights_report(df, dimensions, dim_stats, sector_stats, correlatio
     
     return report_text
 
-
 def main():
-    """Main execution function"""
     print("\n" + "="*70)
     print("DIGITAL MATURITY ASSESSMENT - ANALYSIS & ML PIPELINE")
     print("="*70)
     print("Based on EU Open DMAT Framework")
     print("="*70 + "\n")
     
-    # Step 1: Load data
     df, dimensions = load_and_merge_data()
-    
-    # Step 2: Exploratory analysis
     dim_stats, sector_stats = exploratory_analysis(df, dimensions)
-    
-    # Step 3: Correlation analysis
     correlations, inter_corr = correlation_analysis(df, dimensions)
-    
-    # Step 4: Train ML model
     model, coef_df, r2, rmse = train_ml_model(df, dimensions)
+    insights = generate_insights_report(df, dimensions, dim_stats, sector_stats, correlations, coef_df)
     
-    # Step 5: Generate insights
-    insights = generate_insights_report(df, dimensions, dim_stats, sector_stats, 
-                                       correlations, coef_df)
-    
-    # Final summary
     print("\n" + "="*70)
     print("ANALYSIS COMPLETE - FILES GENERATED")
     print("="*70)
@@ -445,7 +386,6 @@ def main():
     print("\n" + "="*70)
     
     return df, model, coef_df
-
 
 if __name__ == "__main__":
     df, model, coef_df = main()

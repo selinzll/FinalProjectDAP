@@ -1,29 +1,17 @@
-"""
-Digital Maturity Assessment - Synthetic Data Generation
-Based on EU Open DMAT Framework
-
-Generates two Excel files:
-1. rawdma_before.xls - Baseline assessments (T0)
-2. rawdma_after.xls - Post-intervention assessments (T1)
-"""
-
 import pandas as pd
 import numpy as np
 import random
 from datetime import datetime, timedelta
 
-# Initialize
 np.random.seed(42)
 random.seed(42)
 
-# Company name generator (replaces Faker)
 COMPANY_PREFIXES = ['Tech', 'Global', 'Euro', 'Digital', 'Smart', 'Innov', 'Prime', 'Alpha', 'Beta', 'Gamma']
 COMPANY_SUFFIXES = ['Systems', 'Solutions', 'Industries', 'Group', 'Corp', 'Technologies', 'Services', 'Enterprises', 'Ltd', 'GmbH']
 
 def generate_company_name():
     return f"{random.choice(COMPANY_PREFIXES)} {random.choice(COMPANY_SUFFIXES)}"
 
-# Constants from Open DMAT
 SECTORS = [
     'Manufacturing', 'Retail', 'Healthcare', 'Finance', 'Logistics',
     'Agriculture and food', 'Construction', 'Energy and utilities',
@@ -37,14 +25,12 @@ COUNTRIES = [
     'Poland', 'Austria', 'Sweden', 'Portugal', 'Greece', 'Romania'
 ]
 
-# Digital Business Strategy - Question 1: Investment Areas (10 items, binary)
 BUSINESS_AREAS = [
     'Inv_ProductDesign', 'Inv_ProjectMgmt', 'Inv_Operations',
     'Inv_Collaboration', 'Inv_InboundLogistics', 'Inv_MarketingSales',
     'Inv_Delivery', 'Inv_AdminHR', 'Inv_Procurement', 'Inv_Cybersecurity'
 ]
 
-# Digital Business Strategy - Question 2: Readiness Factors (10 items, binary)
 READINESS_FACTORS = [
     'Ready_NeedsIdentified', 'Ready_FinancialResources', 'Ready_ITInfra',
     'Ready_ICTSpecialists', 'Ready_ManagementLeadership', 'Ready_StaffSupport',
@@ -52,7 +38,6 @@ READINESS_FACTORS = [
     'Ready_RiskConsidered'
 ]
 
-# Digital Readiness - Question 3: Basic Technologies (10 items, binary)
 BASIC_TECH = [
     'Tech_Connectivity', 'Tech_Website', 'Tech_WebForms',
     'Tech_LiveChats', 'Tech_ECommerce', 'Tech_EMarketing',
@@ -60,46 +45,39 @@ BASIC_TECH = [
     'Tech_InfoMgmtSystems'
 ]
 
-# Digital Readiness - Question 4: Advanced Technologies (7 items, 0-5 scale)
 ADVANCED_TECH = [
     'AdvTech_Simulation', 'AdvTech_VRAR', 'AdvTech_CADCAM',
     'AdvTech_MES', 'AdvTech_IoT', 'AdvTech_Blockchain', 'AdvTech_3DPrinting'
 ]
 
-# Human-centric - Question 5: Training Initiatives (7 items, binary)
 TRAINING = [
     'Train_SkillAssessment', 'Train_TrainingPlan', 'Train_ShortCourses',
     'Train_LearningByDoing', 'Train_JobPlacements', 'Train_ExternalTraining',
     'Train_SubsidisedPrograms'
 ]
 
-# Human-centric - Question 6: Staff Engagement (8 items, binary)
 ENGAGEMENT = [
     'Engage_Awareness', 'Engage_TransparentComms', 'Engage_Monitoring',
     'Engage_StaffInvolvement', 'Engage_Autonomy', 'Engage_JobRedesign',
     'Engage_FlexibleWork', 'Engage_DigitalSupport'
 ]
 
-# Data Management - Question 7: Data Management Practices (8 items, binary)
 DATA_MGMT = [
     'Data_Policy', 'Data_NotDigital', 'Data_StoredDigitally',
     'Data_Integrated', 'Data_RealTimeAccess', 'Data_Analytics',
     'Data_ExternalSources', 'Data_Dashboards'
 ]
 
-# Data Management - Question 8: Security Measures (6 items, binary)
 SECURITY = [
     'Sec_Policy', 'Sec_ClientDataProtected', 'Sec_StaffTraining',
     'Sec_ThreatMonitoring', 'Sec_Backup', 'Sec_ContinuityPlan'
 ]
 
-# Automation & AI - Question 9: AI Technologies (5 items, 0-5 scale)
 AI_TECH = [
     'AI_NLP', 'AI_ComputerVision', 'AI_AudioProcessing',
     'AI_Robotics', 'AI_BusinessIntelligence'
 ]
 
-# Green Digitalisation - Question 10: Green Practices (10 items, binary)
 GREEN_PRACTICES = [
     'Green_BusinessModel', 'Green_ServiceProvision', 'Green_Products',
     'Green_Production', 'Green_Emissions', 'Green_EnergyGen',
@@ -107,20 +85,16 @@ GREEN_PRACTICES = [
     'Green_Paperless'
 ]
 
-# Green Digitalisation - Question 11: Environmental Policies (5 items, 0-2 scale: No/Partially/Yes)
 GREEN_POLICIES = [
     'GreenPol_Strategy', 'GreenPol_EMS', 'GreenPol_Procurement',
     'GreenPol_EnergyMonitoring', 'GreenPol_Recycling'
 ]
 
-
 def generate_company_metadata(company_id):
-    """Generate basic company information"""
     sector = random.choice(SECTORS)
     size = random.choice(SIZES)
     country = random.choice(COUNTRIES)
 
-    # Sector-specific base scores (affects digital maturity)
     sector_base = {
         'Finance': 68,
         'Telecommunications': 65,
@@ -141,29 +115,19 @@ def generate_company_metadata(company_id):
         'Base_Score_Factor': base_score
     }
 
-
 def generate_dimension_scores(base_score, is_after=False):
-    """
-    Generate scores for all 6 dimensions
-    If is_after=True, applies improvement
-    """
     scores = {}
-
-    # Add randomness to base score for this company
     company_variance = np.random.normal(0, 8)
     adjusted_base = np.clip(base_score + company_variance, 20, 85)
 
-    # --- DIMENSION 1: Digital Business Strategy ---
-    # Question 1: Investment Areas (10 binary items)
     strategy_inv_score = 0
     for area in BUSINESS_AREAS:
-        prob = (adjusted_base / 100) * 0.7  # Higher base = more investments
+        prob = (adjusted_base / 100) * 0.7
         if is_after:
-            prob = min(prob + 0.15, 0.95)  # Improvement
+            prob = min(prob + 0.15, 0.95)
         scores[area] = 1 if random.random() < prob else 0
         strategy_inv_score += scores[area]
 
-    # Question 2: Readiness (10 binary items)
     strategy_ready_score = 0
     for factor in READINESS_FACTORS:
         prob = (adjusted_base / 100) * 0.65
@@ -174,8 +138,6 @@ def generate_dimension_scores(base_score, is_after=False):
 
     strategy_total = ((strategy_inv_score + strategy_ready_score) / 20) * 100
 
-    # --- DIMENSION 2: Digital Readiness ---
-    # Question 3: Basic Tech (10 binary items)
     readiness_basic_score = 0
     for tech in BASIC_TECH:
         prob = (adjusted_base / 100) * 0.75
@@ -184,7 +146,6 @@ def generate_dimension_scores(base_score, is_after=False):
         scores[tech] = 1 if random.random() < prob else 0
         readiness_basic_score += scores[tech]
 
-    # Question 4: Advanced Tech (7 items, 0-5 scale)
     readiness_adv_score = 0
     for tech in ADVANCED_TECH:
         base_level = int((adjusted_base / 100) * 3.5)
@@ -195,8 +156,6 @@ def generate_dimension_scores(base_score, is_after=False):
 
     readiness_total = ((readiness_basic_score / 10) * 50 + (readiness_adv_score / 35) * 50)
 
-    # --- DIMENSION 3: Human-centric Digitalisation ---
-    # Question 5: Training (7 binary items)
     human_train_score = 0
     for item in TRAINING:
         prob = (adjusted_base / 100) * 0.60
@@ -205,7 +164,6 @@ def generate_dimension_scores(base_score, is_after=False):
         scores[item] = 1 if random.random() < prob else 0
         human_train_score += scores[item]
 
-    # Question 6: Engagement (8 binary items)
     human_engage_score = 0
     for item in ENGAGEMENT:
         prob = (adjusted_base / 100) * 0.55
@@ -216,11 +174,9 @@ def generate_dimension_scores(base_score, is_after=False):
 
     human_total = ((human_train_score + human_engage_score) / 15) * 100
 
-    # --- DIMENSION 4: Data Management ---
-    # Question 7: Data Practices (8 binary items, but one is negative)
     data_mgmt_score = 0
     for item in DATA_MGMT:
-        if item == 'Data_NotDigital':  # Negative indicator
+        if item == 'Data_NotDigital':
             prob = max(0.05, 0.30 - (adjusted_base / 100) * 0.25)
             if is_after:
                 prob = max(0.02, prob - 0.15)
@@ -232,9 +188,8 @@ def generate_dimension_scores(base_score, is_after=False):
         if item != 'Data_NotDigital':
             data_mgmt_score += scores[item]
         else:
-            data_mgmt_score -= scores[item]  # Penalty
+            data_mgmt_score -= scores[item]
 
-    # Question 8: Security (6 binary items)
     security_score = 0
     for item in SECURITY:
         prob = (adjusted_base / 100) * 0.68
@@ -245,8 +200,6 @@ def generate_dimension_scores(base_score, is_after=False):
 
     data_total = ((max(0, data_mgmt_score) / 7) * 60 + (security_score / 6) * 40)
 
-    # --- DIMENSION 5: Automation & AI ---
-    # Question 9: AI Tech (5 items, 0-5 scale)
     ai_score = 0
     for tech in AI_TECH:
         base_level = int((adjusted_base / 100) * 3)
@@ -257,17 +210,14 @@ def generate_dimension_scores(base_score, is_after=False):
 
     ai_total = (ai_score / 25) * 100
 
-    # --- DIMENSION 6: Green Digitalisation ---
-    # Question 10: Green Practices (10 binary items)
     green_prac_score = 0
     for item in GREEN_PRACTICES:
-        prob = (adjusted_base / 100) * 0.50  # Generally lower adoption
+        prob = (adjusted_base / 100) * 0.50
         if is_after:
             prob = min(prob + 0.20, 0.85)
         scores[item] = 1 if random.random() < prob else 0
         green_prac_score += scores[item]
 
-    # Question 11: Green Policies (5 items, 0-2 scale)
     green_pol_score = 0
     for item in GREEN_POLICIES:
         base_level = int((adjusted_base / 100) * 1.5)
@@ -278,7 +228,6 @@ def generate_dimension_scores(base_score, is_after=False):
 
     green_total = ((green_prac_score / 10) * 60 + (green_pol_score / 10) * 40)
 
-    # Aggregate dimension scores
     scores['DimScore_Strategy'] = round(strategy_total, 2)
     scores['DimScore_Readiness'] = round(readiness_total, 2)
     scores['DimScore_HumanCentric'] = round(human_total, 2)
@@ -286,7 +235,6 @@ def generate_dimension_scores(base_score, is_after=False):
     scores['DimScore_AutomationAI'] = round(ai_total, 2)
     scores['DimScore_GreenDigital'] = round(green_total, 2)
 
-    # Overall maturity score
     scores['Overall_Maturity'] = round(np.mean([
         scores['DimScore_Strategy'],
         scores['DimScore_Readiness'],
@@ -296,7 +244,6 @@ def generate_dimension_scores(base_score, is_after=False):
         scores['DimScore_GreenDigital']
     ]), 2)
 
-    # Maturity Level
     if scores['Overall_Maturity'] < 45:
         scores['Maturity_Level'] = 'Novice'
     elif scores['Overall_Maturity'] < 75:
@@ -306,10 +253,7 @@ def generate_dimension_scores(base_score, is_after=False):
 
     return scores
 
-
 def generate_datasets(n_companies=1000):
-    """Generate Before and After datasets"""
-
     print("Generating Digital Maturity Assessment datasets...")
     print(f"Number of companies: {n_companies}")
     print("=" * 60)
@@ -321,26 +265,21 @@ def generate_datasets(n_companies=1000):
         if i % 100 == 0:
             print(f"Processing company {i}/{n_companies}...")
 
-        # Generate company metadata
         metadata = generate_company_metadata(i)
 
-        # Generate BEFORE scores
         before_scores = generate_dimension_scores(metadata['Base_Score_Factor'], is_after=False)
         before_record = {**metadata, **before_scores}
         before_record['Assessment_Date'] = (datetime.now() - timedelta(days=random.randint(180, 365))).strftime('%Y-%m-%d')
         before_data.append(before_record)
 
-        # Generate AFTER scores (with improvement)
         after_scores = generate_dimension_scores(metadata['Base_Score_Factor'], is_after=True)
         after_record = {**metadata, **after_scores}
         after_record['Assessment_Date'] = datetime.now().strftime('%Y-%m-%d')
         after_data.append(after_record)
 
-    # Create DataFrames
     df_before = pd.DataFrame(before_data)
     df_after = pd.DataFrame(after_data)
 
-    # Calculate improvement statistics
     improvements = df_after['Overall_Maturity'] - df_before['Overall_Maturity']
 
     print("\n" + "=" * 60)
@@ -365,7 +304,6 @@ def generate_datasets(n_companies=1000):
     print(f"  Min Growth: {improvements.min():.2f}")
     print(f"  Max Growth: {improvements.max():.2f}")
 
-    # Statistical significance test
     from scipy import stats
     t_stat, p_value = stats.ttest_rel(df_after['Overall_Maturity'], df_before['Overall_Maturity'])
     print(f"\nPaired t-test:")
@@ -373,18 +311,14 @@ def generate_datasets(n_companies=1000):
     print(f"  p-value: {p_value:.2e}")
     print(f"  Significant: {'YES' if p_value < 0.001 else 'NO'} (α=0.001)")
 
-    # Maturity level distribution
     print(f"\nMATURITY LEVEL Distribution (After):")
     print(df_after['Maturity_Level'].value_counts())
 
     return df_before, df_after
 
-
 if __name__ == "__main__":
-    # Generate datasets
     df_before, df_after = generate_datasets(n_companies=1000)
 
-    # Save to Excel
     print("\n" + "=" * 60)
     print("Saving to Excel files...")
 
